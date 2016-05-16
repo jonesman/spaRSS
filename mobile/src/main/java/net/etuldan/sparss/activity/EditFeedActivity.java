@@ -62,7 +62,6 @@ import android.os.Bundle;
 import android.support.v7.view.ActionMode;
 import android.support.v7.widget.Toolbar;
 import android.text.Html;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -70,6 +69,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemLongClickListener;
+import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ListView;
@@ -80,8 +80,10 @@ import android.widget.TabHost;
 import android.widget.Toast;
 
 import net.etuldan.sparss.Constants;
+import net.etuldan.sparss.MainApplication;
 import net.etuldan.sparss.R;
 import net.etuldan.sparss.adapter.FiltersCursorAdapter;
+import net.etuldan.sparss.adapter.GroupsCursorAdapter;
 import net.etuldan.sparss.loader.BaseLoader;
 import net.etuldan.sparss.provider.FeedData.FeedColumns;
 import net.etuldan.sparss.provider.FeedData.FilterColumns;
@@ -105,7 +107,7 @@ public class EditFeedActivity extends BaseActivity implements LoaderManager.Load
     static final String FEED_SEARCH_URL = "url";
     static final String FEED_SEARCH_DESC = "contentSnippet";
     private static final String STATE_CURRENT_TAB = "STATE_CURRENT_TAB";
-    private static final String[] FEED_PROJECTION = new String[]{FeedColumns.NAME, FeedColumns.URL, FeedColumns.RETRIEVE_FULLTEXT, FeedColumns.COOKIE_NAME, FeedColumns.COOKIE_VALUE, FeedColumns.HTTP_AUTH_LOGIN, FeedColumns.HTTP_AUTH_PASSWORD, FeedColumns.KEEP_TIME};
+    private static final String[] FEED_PROJECTION = new String[]{FeedColumns.NAME, FeedColumns.URL, FeedColumns.RETRIEVE_FULLTEXT, FeedColumns.COOKIE_NAME, FeedColumns.COOKIE_VALUE, FeedColumns.HTTP_AUTH_LOGIN, FeedColumns.HTTP_AUTH_PASSWORD, FeedColumns.KEEP_TIME, FeedColumns.GROUP_ID};
     private final ActionMode.Callback mFilterActionModeCallback = new ActionMode.Callback() {
 
         // Called when the action mode is created; startActionMode() was called
@@ -226,6 +228,7 @@ public class EditFeedActivity extends BaseActivity implements LoaderManager.Load
     private EditText mCookieNameEditText, mCookieValueEditText;
     private EditText mLoginHTTPAuthEditText, mPasswordHTTPAuthEditText;
     private Spinner mKeepTime;
+    private Spinner mCategory;
     private CheckBox mRetrieveFulltextCb;
     private ListView mFiltersListView;
     private FiltersCursorAdapter mFiltersCursorAdapter;
@@ -252,7 +255,8 @@ public class EditFeedActivity extends BaseActivity implements LoaderManager.Load
         mCookieValueEditText = (EditText) findViewById(R.id.feed_cookievalue);
         mLoginHTTPAuthEditText = (EditText) findViewById(R.id.feed_loginHttpAuth);
         mPasswordHTTPAuthEditText = (EditText) findViewById(R.id.feed_passwordHttpAuth);
-        mKeepTime =(Spinner) findViewById(R.id.settings_keep_times);
+        mKeepTime = (Spinner) findViewById(R.id.settings_keep_times);
+        mCategory = (Spinner) findViewById(R.id.feed_category);
         mRetrieveFulltextCb = (CheckBox) findViewById(R.id.retrieve_fulltext);
         mFiltersListView = (ListView) findViewById(android.R.id.list);
         View tabWidget = findViewById(android.R.id.tabs);
@@ -285,6 +289,7 @@ public class EditFeedActivity extends BaseActivity implements LoaderManager.Load
             String[] selectedValues = getResources().getStringArray(R.array.settings_keep_time_values);
             mKeepTime.setSelection(selectedValues.length - 1);
             mRetrieveFulltextCb.setChecked(true);
+
         } else if (intent.getAction().equals(Intent.ACTION_VIEW)) {
             setTitle(R.string.new_feed_title);
 
@@ -293,6 +298,7 @@ public class EditFeedActivity extends BaseActivity implements LoaderManager.Load
             String[] selectedValues = getResources().getStringArray(R.array.settings_keep_time_values);
             mKeepTime.setSelection(selectedValues.length - 1);
             mRetrieveFulltextCb.setChecked(true);
+
         } else if (intent.getAction().equals(Intent.ACTION_EDIT)) {
             setTitle(R.string.edit_feed_title);
 
@@ -316,6 +322,7 @@ public class EditFeedActivity extends BaseActivity implements LoaderManager.Load
                 Cursor cursor = getContentResolver().query(intent.getData(), FEED_PROJECTION, null, null, null);
 
                 if (cursor.moveToNext()) {
+
                     mNameEditText.setText(cursor.getString(0));
                     mUrlEditText.setText(cursor.getString(1));
                     mRetrieveFulltextCb.setChecked(cursor.getInt(2) == 1);
@@ -327,6 +334,24 @@ public class EditFeedActivity extends BaseActivity implements LoaderManager.Load
                     String[] selectedValues = getResources().getStringArray(R.array.settings_keep_time_values);
                     int index = Arrays.asList(selectedValues).indexOf(String.valueOf(intDate));
                     mKeepTime.setSelection(index >= 0 ? index : selectedValues.length - 1);
+
+                    Cursor gc = getContentResolver().query(FeedColumns.GROUPS_CONTENT_URI,
+                            //new String[]{FeedColumns.NAME, FeedColumns.GROUP_ID},
+                            null,
+                            FeedColumns.IS_GROUP+"=1", null, null);
+
+                    GroupsCursorAdapter gca = new GroupsCursorAdapter(this,
+                            android.R.layout.simple_spinner_dropdown_item, gc);
+
+                    mCategory.setAdapter(gca);
+                    //mCategory.setSelection(sel_id);
+                    long gid = cursor.getLong(8);
+                    int gpos = gca.getPositionForGroupId(gid);
+                    if(gpos !=- 1) {
+                        mCategory.setSelection(gpos);
+                    }
+                    System.out.println("Getting GID: "+gid+" / "+gpos);
+
                     cursor.close();
                 } else {
                     cursor.close();
@@ -334,6 +359,7 @@ public class EditFeedActivity extends BaseActivity implements LoaderManager.Load
                     finish();
                 }
             }
+
         }
     }
 
@@ -378,6 +404,9 @@ public class EditFeedActivity extends BaseActivity implements LoaderManager.Load
                     values.put(FeedColumns.HTTP_AUTH_PASSWORD, passwordHTTPAuth.trim().length() > 0 ? passwordHTTPAuth : "");
                     final TypedArray selectedValues = getResources().obtainTypedArray(R.array.settings_keep_time_values);
                     values.put(FeedColumns.KEEP_TIME, selectedValues.getInt(mKeepTime.getSelectedItemPosition(),0));
+                    long cid = mCategory.getSelectedItemId();
+                    System.out.println("Set GID: "+cid);
+                    values.put(FeedColumns.GROUP_ID, cid != -1 ? cid : null);
                     values.put(FeedColumns.FETCH_MODE, 0);
                     values.putNull(FeedColumns.ERROR);
 

@@ -77,6 +77,7 @@
     <string name="tab_filters_title">Filter</string>
     <string name="tab_advanced_title">Advanced</string>
     <string name="feed_title">Title</string>
+    <string name="feed_category">Category</string>
     <string name="feed_filters">Filter rules</string>
     <string name="filter_add_title">Add rule</string>
     <string name="filter_delete_title">Delete rule</string>

@@ -164,7 +164,8 @@ public class EntriesListFragment extends SwipeRefreshListFragment {
             mShowFeedInfo = savedInstanceState.getBoolean(STATE_SHOW_FEED_INFO);
             mListDisplayDate = savedInstanceState.getLong(STATE_LIST_DISPLAY_DATE);
 
-            mEntriesCursorAdapter = new EntriesCursorAdapter(getActivity(), mUri, Constants.EMPTY_CURSOR, mShowFeedInfo);
+            mEntriesCursorAdapter = new EntriesCursorAdapter(getActivity(), mUri,
+                    Constants.EMPTY_CURSOR, mShowFeedInfo);
         }
     }
 

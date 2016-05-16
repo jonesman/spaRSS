@@ -85,12 +85,36 @@
                                 android:hint="@string/optional"
                                 android:singleLine="true"/>
 
+                            <TextView
+                                android:id="@+id/category_textview"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_below="@id/feed_title"
+                                android:layout_marginLeft="10dp"
+                                android:layout_marginTop="20dp"
+                                android:text="@string/feed_category"
+                                android:textAppearance="?android:attr/textAppearanceMedium"
+                                android:textStyle="bold"/>
+
+                            <Spinner
+                                android:id="@+id/feed_category"
+                                android:layout_below="@+id/category_textview"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginLeft="10dp"
+                                android:layout_marginRight="10dp"
+                                android:layout_marginTop="5dp"
+                                android:defaultValue="4"
+                                android:inputType="text"
+                                android:title="@string/feed_category"/>
+
                             <CheckBox
                                 android:id="@+id/retrieve_fulltext"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_alignParentRight="true"
                                 android:layout_below="@+id/settings_keep_times"
+                                android:layout_marginTop="10dp"
                                 android:layout_marginRight="10dp"
                                 android:text="@string/get_full_text"/>
                         </LinearLayout>
